@@ -55,8 +55,12 @@ let getTodayClasses = async(req, res) => {
     // req.end()
 }
 //todo getCurrentClass
-//todo getScheduleForWeek
-//todo getComingClasses
+//todo getScheduleForWeek for schedule page
+let getScheduleForWeek = async(req, res) => {
+    const response = await transaction('select * from prof_get_schedule_week;')
+    res.json(response.rows.filter(item => item.user_id === req.query.userId))
+}
+//todo getComingClasses for homepage
 
 const router = express.Router()
 router.get("/disciplines", getCurrentDisciplines)
@@ -64,5 +68,6 @@ router.get('/disciplinesAndGroups', getCurrentDisciplinesWithGroups)
 router.get('/studentGroups', getCurrentStudentGroups)
 router.get('/personalData', getPersonalData)
 router.get('/todayClasses', getTodayClasses)
+router.get('/scheduleWeek', getScheduleForWeek)
 
 export default router
