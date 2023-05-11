@@ -16,7 +16,7 @@ export default async queries => {
         return results
     } catch (e) {
         await client.query('ROLLBACK')
-        console.log('fkdfjskld')
+        console.log(e)
     }
     } catch (e) {
         console.log(e)
