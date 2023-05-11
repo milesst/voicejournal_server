@@ -1,7 +1,22 @@
 import express from 'express'
-import controllerAdm from '../controller/admin.js'
-import controllerProf from '../controller/professor.js'
-import controllerLogin from '../controller/login.js'
+import dotenv from 'dotenv'
+const config = dotenv.config() 
+
+let controllerProf, controllerAdm, controllerLogin
+
+if (process.env.VJ_ENV === 'test') {
+    controllerProf = (await import("../testController/professor.js")).default
+    controllerAdm = (await import("../testController/admin.js")).default
+
+    console.log('USING TEST SERVER IMPLEMENTATION')
+}
+else {
+    controllerProf = (await import("../controller/professor.js")).default
+    controllerAdm = (await import("../controller/admin.js")).default
+
+    console.log('USING DEV SERVER IMPLEMENTATION')
+}
+
 const router = express.Router()
 // router.use((req, res, next) => {
 //     const token =

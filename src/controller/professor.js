@@ -105,6 +105,13 @@ let postNewAssignment = async(req, res) => {
     res.json(response)
 }
 
+let postCompletedClass = async(req, res) => {
+    const statement = 'insert into assignments(assignment_id, discipline_id, group_id, start_date, deadline, name, description) VALUES' +
+    `(uuid_generate_v1(), '${req.body.disciplineId}', '${req.body.groupId}', '${req.body.startDate}', '${req.body.deadline}', '${req.body.name}', '${req.body.description}');`
+    const response = await transaction(statement)
+    res.json(response)
+}
+
 const router = express.Router()
 router.get("/disciplines", getCurrentDisciplines)
 router.get('/disciplinesAndGroups', getCurrentDisciplinesWithGroups)
@@ -119,6 +126,7 @@ router.get('/assignmentsForClass', getAssignmentsForClass)
 router.get('/groupStudents', getGroupStudents)
 
 router.post('/newAssignment', postNewAssignment)
+router.post('/completedClass', postCompletedClass)
 
 router.use((req, res) => { console.log(res.body) })
 
