@@ -14,6 +14,37 @@ let getStudentGroups = async (req, res, next) => {
     const response = await transaction('SELECT * FROM public.student_group')
     res.json(response.rows)
 } 
+
+let updateGroup = async (req, res, next) => {
+    const response = transaction(
+        `UPDATE student_group SET
+        group_number='${req.body.group_number}',
+        admission_year='${req.body.admission_year}'
+        WHERE group_id='${req.body.group_id}'
+        `
+    )
+    res.send(response)
+}
+
+let deleteGroup = async (req, res) => {
+    const response = transaction(`DELETE FROM student_group WHERE group_id='${req.query.groupId}'`)
+}
+
+let addGroup = async (req, res, next) => {
+    const response = transaction('INSERT INTO student_group VALUES (' +
+    `uuid_generate_v1(), '${req.body.group_number}', '${admission_year}');`)
+    res.send(response)
+}
+
+let getStudents = async (req, res, next) => {
+    const response = await transaction('SELECT * FROM prof_get_group_students')
+    let preparedResponse = response.rows
+    if (req.query.groupId) {
+        preparedResponse = preparedResponse.filter(student => student.group_id === req.query.groupId)        
+    }
+    res.json(preparedResponse)
+} 
+
 let getProfessors = async (req, res, next) => {
     const response = await transaction('SELECT * FROM public.lk_user')
     res.json(response.rows)
@@ -50,7 +81,13 @@ let deleteUser = async (req, res) => {
 
 const router = express.Router()
 router.get('/disciplines', getDisciplines)
+
 router.get('/student_groups', getStudentGroups)
+router.put('/updateStudentGroup', updateGroup)
+router.delete('/deleteStudentGroup', deleteGroup)
+router.post('/addGroup', addGroup)
+
+router.get('/students', getStudents)
 
 router.get('/users', getUsers)
 router.post('/addUser', addUser)

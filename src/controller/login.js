@@ -12,7 +12,7 @@ const router = express.Router()
 router.use(bodyParser.json())
 
 router.post('', async (req, res) => {
-    const response = await transaction(`select password_hash, user_id from lk_user where login='${req.body.username}'`)
+    const response = await transaction(`select password_hash, user_id, role from lk_user where login='${req.body.username}'`)
     try {
       const userHash = response.rows[0].password_hash
       bcrypt.compare(req.body.password, userHash, function(err, result) {
@@ -25,7 +25,7 @@ router.post('', async (req, res) => {
                     expiresIn: "2h",
                   }
                 )
-              res.json({accessToken: token, userId: response.rows[0].user_id})  
+              res.json({accessToken: token, userId: response.rows[0].user_id, isAdmin: response.rows[0].role === 'admin'})  
           }
           else {
               res.json({answer: "INVALID PASSWORD"})
