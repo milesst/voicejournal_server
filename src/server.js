@@ -7,17 +7,28 @@ import dotenv from 'dotenv'
 const app = express();
 app.use(bodyParser.json())
 app.use(cors());
+import webpush from 'web-push'
+
+if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+  console.log(
+    "You must set the VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY " +
+      "environment variables. You can use the following ones:"
+  );
+  console.log(webpush.generateVAPIDKeys());
+  throw new Error();
+}
+
+webpush.setVapidDetails(
+  "http://localhost:3001",
+  process.env.VAPID_PUBLIC_KEY,
+  process.env.VAPID_PRIVATE_KEY
+);
 
 const config = dotenv.config() 
 
 let controllerLogin
 
-if (process.env.VJ_ENV === 'test') {
-  controllerLogin = (await import("./testController/login.js")).default
-}
-else {
-  controllerLogin = (await import("./controller/login.js")).default
-}
+controllerLogin = (await import("./controller/login.js")).default
 
 // const config = process.env;
 
@@ -46,7 +57,8 @@ app.get('/', (req, res) => {
   res.send('Successful response.');
 });
 
-app.listen(3000, () => console.log('Example app is listening on port 3000.'));
-// console.log(db.connect())
+let serverPort = process.env.NODE_ENV === 'test' ? 3002 : 3000
 
-serviceWorker.register('service-worker.js')
+app.listen(serverPort, () => console.log(`app is listening on port ${serverPort}.`));
+
+export default app

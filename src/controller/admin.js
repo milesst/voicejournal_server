@@ -3,18 +3,15 @@ import express from 'express'
 import transaction from '../db/transaction.js'
 import bcrypt from 'bcrypt'
 let getUsers = async (req, res, next) => {
-    let client = await db.connect()
-    const response = await client.query('SELECT * FROM public.lk_user')
+    const response = await transaction('SELECT * FROM public.lk_user')
     res.json(response.rows)
 }
 let getDisciplines = async (req, res, next) => {
-    let client = await db.connect()
-    const response = await client.query('SELECT * FROM public.discipline')
+    const response = await transaction('SELECT * FROM public.discipline')
     res.json(response.rows)
 }
 let getStudentGroups = async (req, res, next) => {
-    let client = await db.connect()
-    const response = await client.query('SELECT * FROM public.student_group')
+    const response = await transaction('SELECT * FROM public.student_group')
     res.json(response.rows)
 } 
 let getProfessors = async (req, res, next) => {
@@ -34,11 +31,30 @@ let addUser = async (req, res, next) => {
     })
 }
 
+let updateUser = async (req, res, next) => {
+    const response = transaction(
+        `UPDATE lk_user SET
+        first_name='${req.body.first_name}',
+        last_name='${req.body.last_name}',
+        patronymic='${req.body.patronymic}',
+        role='${req.body.role}'
+        WHERE user_id='${req.body.user_id}'
+        `
+    )
+    res.send(response)
+}
+
+let deleteUser = async (req, res) => {
+    const response = transaction(`DELETE FROM lk_user WHERE user_id='${req.query.userId}'`)
+}
+
 const router = express.Router()
 router.get('/disciplines', getDisciplines)
 router.get('/student_groups', getStudentGroups)
-router.get('/users', getUsers)
 
+router.get('/users', getUsers)
 router.post('/addUser', addUser)
+router.put('/updateUser', updateUser)
+router.delete('/deleteUser', deleteUser)
 
 export default router

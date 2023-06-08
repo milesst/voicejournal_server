@@ -12,24 +12,29 @@ const router = express.Router()
 router.use(bodyParser.json())
 
 router.post('', async (req, res) => {
-    const response = await transaction(`select password_hash from lk_user where login='${req.body.username}'`)
-    const userHash = response.rows[0].password_hash
-    bcrypt.compare(req.body.password, userHash, function(err, result) {
-        if (result) {
-            // res.send("true")
-            const token = jwt.sign(
-                { user_id: req.body.login },
-                process.env.TOKEN_KEY,
-                {
-                  expiresIn: "2h",
-                }
-              )
-            res.json({accessToken: token})  
-        }
-        else {
-            res.json({answer: "poshel naxui"})
-        }
-    });
+    const response = await transaction(`select password_hash, user_id from lk_user where login='${req.body.username}'`)
+    try {
+      const userHash = response.rows[0].password_hash
+      bcrypt.compare(req.body.password, userHash, function(err, result) {
+          if (result) {
+              // res.send("true")
+              const token = jwt.sign(
+                  { user_id: req.body.login },
+                  process.env.TOKEN_KEY,
+                  {
+                    expiresIn: "2h",
+                  }
+                )
+              res.json({accessToken: token, userId: response.rows[0].user_id})  
+          }
+          else {
+              res.json({answer: "INVALID PASSWORD"})
+          }
+      });
+  }
+  catch (e) {
+    res.json({answer: 'ERROR'})
+  }
 })
 
 const config = process.env;

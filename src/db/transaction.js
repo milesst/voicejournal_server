@@ -10,7 +10,6 @@ export default async queries => {
     }
     try {
         await client.query('BEGIN')
-        // let results = await Promise.all(await client.query(queries))
         let results = await client.query(queries)
         await client.query('COMMIT')
         return results

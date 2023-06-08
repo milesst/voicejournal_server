@@ -1,21 +1,15 @@
 import express from 'express'
 import dotenv from 'dotenv'
 const config = dotenv.config() 
-
+import {default as documentController} from '../controller/documents.js'
+import {default as notifController} from '../notifications/notification.js'
 let controllerProf, controllerAdm, controllerLogin
 
-if (process.env.VJ_ENV === 'test') {
-    controllerProf = (await import("../testController/professor.js")).default
-    controllerAdm = (await import("../testController/admin.js")).default
 
-    console.log('USING TEST SERVER IMPLEMENTATION')
-}
-else {
-    controllerProf = (await import("../controller/professor.js")).default
-    controllerAdm = (await import("../controller/admin.js")).default
+controllerProf = (await import("../controller/professor.js")).default
+controllerAdm = (await import("../controller/admin.js")).default
 
-    console.log('USING DEV SERVER IMPLEMENTATION')
-}
+console.log('USING DEV SERVER IMPLEMENTATION')
 
 const router = express.Router()
 // router.use((req, res, next) => {
@@ -35,5 +29,7 @@ const router = express.Router()
 //   })
 router.use("/professor", controllerProf)
 router.use('/admin', controllerAdm)
+router.use('/documents', documentController)
+router.use('/notification', notifController)
 
 export default router
