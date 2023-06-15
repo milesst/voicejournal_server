@@ -5,4 +5,5 @@ RUN mkdir -p /app/
 WORKDIR /app/
 COPY . .
 RUN npm ci
+CMD ["node", "src/server.js"]
 EXPOSE 3000
