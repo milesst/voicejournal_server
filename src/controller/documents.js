@@ -5,6 +5,7 @@ const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthT
 import express from 'express'
 import {Blob} from 'buffer';
 import transaction from '../db/transaction.js'
+import path from "path";
 
 let createDocument = (studentData, reportData) => {
     const styles = {
@@ -89,8 +90,8 @@ let generateDocument = async (req, res) => {
     const response = await transaction('select * from prof_get_semester_report;')
     const students = (await transaction('select * from prof_get_group_students;'))
 
-    const filteredStudents = students.rows.filter(item => item.group_id === req.body.group.group_id)
-    const filtered = response.rows.filter(item => item.discipline_id === req.body.id && item.group_id === req.body.group.group_id)
+    const filteredStudents = students.rows.filter(item => item.group_id === req.body.group)
+    const filtered = response.rows.filter(item => item.discipline_id === req.body.id && item.group_id === req.body.group)
     console.log(filtered)
    
     const studentData = filteredStudents.reduce((result, student) => {
@@ -103,24 +104,29 @@ let generateDocument = async (req, res) => {
 
     const reportData = {
         disciplineName: req.body.name,
-        groupNumber: req.body.group.group_number
+        groupNumber: filteredStudents[0].group_number
     }
 
     for (let assignment of filtered) {
         studentData[assignment.student_id].fullGrade += assignment.grade
     }
 
-    Packer.toBuffer(createDocument(studentData, reportData)).then((buffer) => {
-        // fs.writeFileSync(`${req.body.docType}_${reportData[disciplineName]}_${reportData[groupNumber]}.docx`, buffer);
-        fs.writeFileSync(`doc.docx`, buffer);
-        transaction(`insert into document(id, doc_type, doc, user_id) values (uuid_generate_v1(), '${req.body.docType}', '${buffer.join('')}', '${req.body.userId}');`).then(() => {
+    const doc = createDocument(studentData, reportData)
+
+    Packer.toBuffer(doc).then((buffer) => {
+        const fileName = `${req.body.docType}_${req.body.userId}_${new Date().getTime()}.docx`
+        fs.writeFileSync(`./user_files/${fileName}`, buffer);
+
+        const statement = `insert into document(id, doc_type, file_path, user_id, creation_date, group_id, discipline_id) values (uuid_generate_v1(), '${req.body.docType}', '${path.resolve(`./user_files/${fileName}`)}', '${req.body.userId}', '${new Date().toJSON()}', '${req.body.group}', '${req.body.id}');`
+        transaction(statement).then(() => {
             console.log('fefwe')
         })
         .catch((e) => {
             console.log(e)
         })
 
-    });
+    })
+
     let currentPath = process.cwd();
     res.sendFile(currentPath + `/doc.docx`)
 }
@@ -133,17 +139,9 @@ let getDocumentList = async (req, res) => {
 
 let getDocument = async (req, res) =>  {
     const response = await transaction('select * from prof_get_document;')
-    const doc = response.rows.filter(item => item.id === req.query.docId)[0].doc
-    // fs.writeFileSync("My Document2.docx", doc);
-    // Packer.toBuffer([doc.buffer]).then((buffer) => {
-    //     fs.writeFileSync("My Document2.docx", buffer);
-    // });
-    fs.writeFileSync("My Document2.docx", doc);
+    const doc = response.rows.filter(item => item.id === req.query.docId)[0].file_path
     let currentPath = process.cwd();
-    console.log({doc})
-    // res.sendFile(currentPath + "/My Document2.docx")
-    // const blob = new Blob([doc.buffer])
-    res.send(doc.buffer)
+    res.sendFile(doc)
     
     // res.sendFile(currentPath + "/My Document.docx")
 }

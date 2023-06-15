@@ -110,10 +110,14 @@ let getPersonalData = async(req, res, next) => {
 }
 
 let getTodayClasses = async(req, res) => {
-    // const response = await transaction('select * from prof_get_today_classes;')
-    const response = await transaction('select * from test_get_today_classes;')
-    
-    res.json(response.rows.filter(item => item.user_id === req.query.userId))
+    const response = await transaction('select * from prof_get_today_classes;')
+    // const response = await transaction('select * from test_get_today_classes;')
+    let preparedResponse = response.rows.filter(item => item.user_id === req.query.userId)
+    if (req.query.groupId) {
+        preparedResponse = response.rows.filter(tclass => tclass.group_id === req.query.groupId)
+    }
+
+    res.json(preparedResponse)
 }
 
 let getDeadlineAssignments = async(req, res) => {
@@ -140,24 +144,24 @@ let getGroupStudents = async(req, res) => {
 
 let getAssignmentsForClass = async(req, res) => {
     const response = await transaction('select * from prof_get_assignments;')
-    const filteredByUserId = response.rows.filter(item => item.professor_id === req.query.userId && item.schedule_id === req.query.scheduleId)
+    const filteredByUserId = response.rows.filter(item => item.professor_id === req.query.userId && item.discipline_id === req.query.disciplineId && item.group_id === req.query.groupId)
     let preparedResponse = filteredByUserId.reduce((acc, obj) => {
-        const key = obj['name'];
+        const key = obj['discipline_name'];
         const curGroup = acc[key] ?? [];
 
         return { ...acc, [key]: [...curGroup, obj] };
     }, {});
     const mappedResponse = Object.keys(preparedResponse).map(item => {
         return {
-        assignmentId: preparedResponse[item][0].assignment_id,
-        assignmentName: preparedResponse[item][0].name,
+        assignment_id: preparedResponse[item][0].assignment_id,
+        name: preparedResponse[item][0].name,
         description: preparedResponse[item][0].description,
-        disciplineId: preparedResponse[item][0].discipline_id,
-        disciplineName: preparedResponse[item][0].discipline_name,
-        startDate: preparedResponse[item][0].start_date,
+        discipline_id: preparedResponse[item][0].discipline_id,
+        discipline_name: preparedResponse[item][0].discipline_name,
+        start_date: preparedResponse[item][0].start_date,
         deadline: preparedResponse[item][0].deadline,
-        groupId: preparedResponse[item][0].group_id,
-        groupNumber: preparedResponse[item][0].group_number,
+        group_id: preparedResponse[item][0].group_id,
+        group_number: preparedResponse[item][0].group_number,
         completedAssignments: preparedResponse[item].map(assignment => {return {firstName: assignment.first_name, lastName: assignment.last_name, 
             completionDate: assignment.completion_date, grade: assignment.grade, comment: assignment.comment}}).filter(assignment => assignment.completionDate)
     }})  
@@ -178,8 +182,8 @@ let getScheduleForWeek = async(req, res) => {
 
 let postNewAssignment = async(req, res) => {
     const desc = req.body.comment ? ', description' : null
-    const statement = `insert into assignments(assignment_id, discipline_id, group_id, start_date, deadline, name${desc || ''}) VALUES` +
-    `(uuid_generate_v1(), '${req.body.disciplineId}', '${req.body.groupId}', '${req.body.startDate}', '${req.body.deadline}', '${req.body.name}' ${desc ? ', \'' + req.body.description + '\'' : ''});`
+    const statement = `insert into assignments(assignment_id, discipline_id, professor_id, group_id, start_date, deadline, name${desc || ''}) VALUES` +
+    `(uuid_generate_v1(), '${req.body.disciplineId}', '${req.body.professorId}', '${req.body.groupId}', '${req.body.startDate}', '${req.body.deadline}', '${req.body.name}' ${desc ? ', \'' + req.body.description + '\'' : ''});`
     const response = await transaction(statement)
     res.json(response)
 }
