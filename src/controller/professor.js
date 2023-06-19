@@ -174,6 +174,45 @@ let getAssignmentsForClass = async(req, res) => {
         res.status(500)
 }
 
+let getAssignmentsForDiscipline = async(req, res) => {
+    const response = await transaction('select * from prof_get_assignments;')
+    const filteredByUserId = response.rows.filter(item => item.professor_id === req.query.userId && item.discipline_id === req.query.disciplineId)
+    // let preparedResponse = filteredByUserId.reduce((acc, obj) => {
+    //     const key = obj['discipline_id'];
+    //     const curGroup = acc[key] ?? [];
+
+    //     return { ...acc, [key]: [...curGroup, obj] };
+    // }, {});
+    let reducedResponse = filteredByUserId.reduce((acc, obj) => {
+        const key = obj['assignment_id'];
+        const curGroup = acc[key] ?? [];
+
+        return { ...acc, [key]: [...curGroup, obj] };
+    }, {});
+    const mappedResponse = Object.keys(reducedResponse).map(item => {
+        return {
+        assignment_id: reducedResponse[item][0].assignment_id,
+        name: reducedResponse[item][0].name,
+        description: reducedResponse[item][0].description,
+        discipline_id: reducedResponse[item][0].discipline_id,
+        discipline_name: reducedResponse[item][0].discipline_name,
+        start_date: reducedResponse[item][0].start_date,
+        deadline: reducedResponse[item][0].deadline,
+        group_id: reducedResponse[item][0].group_id,
+        group_number: reducedResponse[item][0].group_number,
+        completedAssignments: reducedResponse[item].map(assignment => {return {firstName: assignment.first_name, lastName: assignment.last_name, 
+            completionDate: assignment.completion_date, grade: assignment.grade, comment: assignment.comment}}).filter(assignment => assignment.completionDate),
+        studentCount: reducedResponse[item][0].student_count
+        }})  
+
+    if (mappedResponse) {
+        res.json(mappedResponse)
+        console.log()
+    }
+    else 
+        res.status(500)
+}
+
 let getScheduleForWeek = async(req, res) => {
     const response = await transaction('select * from prof_get_schedule_week;')
     res.json(response.rows.filter(item => item.user_id === req.query.userId))
@@ -310,6 +349,11 @@ let getAssignmentsForGroup = async (req, res) => {
     res.json(mappedResponse)
 }
 
+let getVoiceCommandData = async (req, res) => {
+    const response = await transaction('SELECT * FROM prof_get_voice_command_data')
+    res.json(response.rows)
+}
+
 const router = express.Router()
 router.get("/disciplines", getCurrentDisciplines)
 router.get('/disciplinesAndGroups', getCurrentDisciplinesWithGroups)
@@ -320,6 +364,7 @@ router.get('/deadlineAssignments', getDeadlineAssignments)
 router.get('/scheduleWeek', getScheduleForWeek)
 router.get('/classScheduleInfo', getClassScheduleInfo)
 router.get('/currentClass', getCurrentClass)
+router.get('/assignmentsForDiscipline', getAssignmentsForDiscipline)
 router.get('/assignmentsForClass', getAssignmentsForClass)
 router.get('/assignmentsForGroup', getAssignmentsForGroup)
 router.get('/groupStudents', getGroupStudents)
@@ -334,6 +379,8 @@ router.post('/completedClass', postCompletedClass)
 router.post('/completedAssignment', postCompletedAssignment)
 
 router.put('/completedAssignment', updateCompletedAssignment)
+
+router.get('/voiceCommandData', getVoiceCommandData)
 
 router.use((req, res) => { console.log(res.body) })
 
